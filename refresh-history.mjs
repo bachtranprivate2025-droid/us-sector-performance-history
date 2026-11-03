@@ -79,9 +79,9 @@ export function buildHistoryPoints(history, start, end, mode) {
         return point;
     });
 }
-export function threeMonthsBefore(day) {
+export function monthsBefore(day, months) {
     const [year, month, date] = day.split("-").map(Number);
-    const monthStart = new Date(Date.UTC(year, month - 4, 1));
+    const monthStart = new Date(Date.UTC(year, month - 1 - months, 1));
     const lastDay = new Date(Date.UTC(monthStart.getUTCFullYear(), monthStart.getUTCMonth() + 1, 0)).getUTCDate();
     monthStart.setUTCDate(Math.min(date, lastDay));
     return monthStart.toISOString().slice(0, 10);
@@ -92,7 +92,7 @@ const exchangeDate = new Intl.DateTimeFormat("en-CA", {
 const cache = new Map();
 async function readFeed(ticker) {
     const url = new URL(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}`);
-    url.search = "range=6mo&interval=1d&includePrePost=false";
+    url.search = "range=2y&interval=1d&includePrePost=false";
     const response = await fetch(url, {
         headers: { "User-Agent": "Mozilla/5.0 SectorPerformanceHistory/1.0", Accept: "application/json" },
         cache: "no-store", signal: AbortSignal.timeout(9_000),
@@ -145,7 +145,7 @@ export async function GET(request) {
         return Response.json({ error: "Chưa tải được lịch phiên SPY từ Yahoo Finance." }, { status: 502 });
     }
     const fullDates = Object.keys(benchmark.value).sort();
-    const cutoff = threeMonthsBefore(exchangeDate.format(Date.now()));
+    const cutoff = monthsBefore(exchangeDate.format(Date.now()), 12);
     const dates = fullDates.filter((date) => date >= cutoff);
     const baseline = fullDates.filter((date) => date < cutoff).at(-1) ?? null;
     const payload = { dates, baseline, prices: { SPY: benchmark.value }, missing: [] };
